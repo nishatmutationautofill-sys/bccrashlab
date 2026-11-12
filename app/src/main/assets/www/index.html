@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BC Crash Lab</title>
+<style>
+:root{--bg:#0f1419;--card:#18202a;--line:#273241;--tx:#e6edf3;--mut:#8b98a8;--ac:#3fb950;--rd:#f85149;--yl:#d29922;--bl:#58a6ff}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font:13px/1.5 "Segoe UI","Nirmala UI",sans-serif}
+#toolbar{display:flex;gap:6px;padding:6px;background:var(--card);border-bottom:1px solid var(--line)}
+#toolbar button,.btn{background:#222d3a;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+#toolbar button:hover,.btn:hover{background:#2c3a4b}
+#url{flex:1;background:#0b1015;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 10px}
+#main{flex:1;display:flex;min-height:0}
+#sigBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 8px;background:#0d1117;border-bottom:1px solid var(--line);font-size:13px}
+#sigBar input{width:150px}
+#sigBar.bet{background:#10301c}#sigBar.skip{background:#2b2410}#sigBar.stop{background:#3a1616}
+#wv{flex:1;min-width:0;background:#fff}
+#panel{width:470px;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--bg)}
+#tabs{display:flex;background:var(--card)}
+#tabs button{flex:1;padding:8px 2px;background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);cursor:pointer}
+#tabs button.on{color:var(--tx);border-bottom-color:var(--ac)}
+.pane{display:none;padding:10px;overflow:auto;flex:1}.pane.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px}
+h3{margin:0 0 8px;font-size:13px;color:var(--bl)}
+label{display:block;color:var(--mut);font-size:12px;margin-top:6px}
+input,select,textarea{width:100%;background:#0b1015;color:var(--tx);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
+textarea{height:70px;resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kv{background:#0b1015;border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.kv b{display:block;font-size:15px}.kv span{color:var(--mut);font-size:11px}
+.g{color:var(--ac)}.r{color:var(--rd)}.y{color:var(--yl)}.m{color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:3px 5px;text-align:right;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+canvas{width:100%;height:150px;background:#0b1015;border:1px solid var(--line);border-radius:6px}
+.bar{display:flex;align-items:center;gap:6px;margin:2px 0}.bar i{display:block;height:10px;background:var(--bl);border-radius:3px}
+.sig{padding:10px;border-radius:8px;border:1px solid var(--line);font-size:14px;margin-bottom:8px}
+.warn{background:#2a2110;border:1px solid #5a4514;color:#e3c46b;border-radius:8px;padding:8px;font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:3px}.chip{padding:1px 6px;border-radius:10px;font-size:11px;background:#222d3a}
+.chip.lo{color:var(--rd)}.chip.hi{color:var(--ac)}
+#hdr{background:#121a23;border-bottom:1px solid var(--line);padding:6px 10px;font-size:12px;transition:background .4s}
+#hdr.fl{background:#12351f}
+#tabs button{font-size:12px}
+/* ===== Android / মোবাইল লেআউট ===== */
+html,body{height:100%}
+body{height:100dvh;overflow:hidden}
+#toolbar{overflow-x:auto;flex:none}
+#toolbar button{white-space:nowrap;flex:none;min-height:34px}
+#url{min-width:150px}
+#sigBar{flex:none;max-height:30vh;overflow:auto}
+#main{flex-direction:column}
+#wv{flex:1 1 42%;width:100%;min-height:120px;background:#0f1419}
+#panel{width:100%;flex:1 1 58%;border-left:0;border-top:1px solid var(--line);min-height:0}
+input,select,textarea{font-size:16px}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <button id="back">◀</button><button id="fwd">▶</button><button id="reload">⟳</button>
+  <input id="url" placeholder="URL লিখুন বা সার্চ করুন">
+  <button id="go">যান</button>
+  <button id="home">BC Game</button>
+  <button id="fullv">🖥 ফুল ভিউ: চালু</button><button id="zoomOut" title="Zoom Out">−</button><span id="zoomLevel" style="min-width:42px;text-align:center;align-self:center;font-size:12px">100%</span><button id="zoomIn" title="Zoom In">+</button><button id="zoomReset" title="Reset Zoom">100%</button><button id="scrollFit" title="বেট/Amount/ক্যাশআউট স্ক্রোল ছাড়াই দেখান">📐 বেট-ফিট: চালু</button><button id="toggle">📊 প্যানেল</button>
+</div>
+<div id="sigBar"><b id="sigTxt">সিগন্যাল: অ্যাডভাইজার ট্যাবে "চালু" চাপুন</b><span id="sigNum"></span><button id="sigCopyS">স্টেক কপি</button><button id="sigCopyC">ক্যাশআউট কপি</button><input id="sigBal" type="number" step="0.01" placeholder="আপনার ব্যালেন্স (ঐচ্ছিক)"><label style="display:flex;align-items:center;gap:4px;margin:0;color:#e6edf3;white-space:nowrap"><input id="autoFill" type="checkbox" style="width:auto"> Stake + Auto Cash Out অটোফিল</label><button id="autoFillNow">এখন পূরণ</button><small id="fillStatus" style="color:#8b98a8">অটোফিল প্রস্তুত</small></div>
+<div id="main">
+  <div id="wv"></div>
+  <div id="panel">
+    <div id="hdr"><div id="hs1"></div><div id="hs2"></div></div>
+    <div id="tabs">
+      <button data-t="data" class="on">ডেটা</button><button data-t="hist">হিস্টোরি</button>
+      <button data-t="adv">অ্যাডভাইজার</button>
+    </div>
+
+    <div class="pane on" id="p-data">
+      <div class="card"><h3>অটো ক্যাপচার (পেজের হিস্ট্রি থেকে)</h3>
+        <label><input type="checkbox" id="cap" style="width:auto"> ক্যাপচার চালু</label>
+        <label>হিস্ট্রির ক্রম</label>
+        <select id="ord"><option value="auto">অটো শনাক্ত (প্রস্তাবিত)</option><option value="last">নতুন রেজাল্ট শেষে/ডানে</option><option value="first">নতুন রেজাল্ট আগে/বামে</option></select>
+        <label>কাস্টম CSS selector (ঐচ্ছিক — খালি রাখলে অটো-ডিটেক্ট)</label>
+        <input id="sel" placeholder="যেমন: .history-item">
+        <div class="m" id="capst" style="margin-top:6px">স্ট্যাটাস: বন্ধ</div>
+        <button class="btn" id="diag" style="margin-top:6px">🔍 ডায়াগনস্টিক</button>
+        <pre id="diagOut" class="m" style="white-space:pre-wrap;font-size:11px;max-height:180px;overflow:auto;margin:6px 0 0"></pre>
+      </div>
+      <div class="card"><h3>হাতে ডেটা যোগ</h3>
+        <textarea id="paste" placeholder="মাল্টিপ্লায়ার পেস্ট করুন (পুরনো→নতুন ক্রমে): 1.23 2.5x 1.00 ..."></textarea>
+        <div class="row" style="margin-top:6px"><button class="btn" id="addp">যোগ করুন</button><button class="btn" id="rev">উল্টো ক্রমে (নতুন→পুরনো)</button></div>
+        <label>এক রাউন্ড দ্রুত যোগ (Enter চাপুন)</label><input id="one" placeholder="2.35">
+      </div>
+      <div class="card"><h3>ফাইল / ম্যানেজ</h3>
+        <div class="row"><button class="btn" id="exp">CSV এক্সপোর্ট</button><button class="btn" id="imp">CSV ইম্পোর্ট</button><button class="btn" id="clr">সব মুছুন</button></div>
+        <div id="cnt" class="m" style="margin-top:6px"></div>
+        <div class="chips" id="recent" style="margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-hist">
+      <div class="card"><h3>ক্যাপচার হিস্টোরি (নতুন উপরে)</h3><div id="histInfo" class="m" style="margin-bottom:6px"></div><table id="histT"></table></div>
+    </div>
+
+
+
+
+
+    <div class="pane" id="p-adv">
+      <div class="warn">⚠ Crash-এ হাউস এজ আছে (প্রতি বেটে গড়ে ≈ −১%)। কোনো টাইমিং/স্টেক কৌশল এটা উল্টাতে পারে না। অ্যাডভাইজার আসলে <b>ঝুঁকি-নিয়ন্ত্রক</b>: কখন থামতে হবে, কত ঝুঁকি নেওয়া যাবে — আর পেপার ট্রেডে প্রমাণ দেখায় এটি লাভের গ্যারান্টি দেয় কিনা।</div>
+      <div id="advNow" style="margin-top:10px"></div>
+      <div class="card"><h3>অ্যাডভাইজার সেটিংস</h3>
+        <div class="row"><div><label>শুরুর ব্যালেন্স</label><input id="aStart" type="number"></div><div><label>ডিফল্ট reference target (AI বদলাবে)</label><input id="aTar" type="number" step="0.1"></div></div>
+        <div class="row"><div><label>প্রতি বেটে ব্যালেন্সের % (ঝুঁকি)</label><input id="aRisk" type="number" step="0.1"></div><div><label>পরপর কত হারে বিরতি</label><input id="aLoseN" type="number"></div></div>
+        <div class="row"><div><label>বিরতি (রাউন্ড)</label><input id="aCool" type="number"></div><div><label>ন্যূনতম ডেটা (রাউন্ড)</label><input id="aMin" type="number"></div></div>
+        <div class="row"><div><label>স্টপ-লস % (০=বন্ধ)</label><input id="aSL" type="number"></div><div><label>টেক-প্রফিট % (০=বন্ধ)</label><input id="aTP" type="number"></div></div>
+        <div class="row"><div><label>পিক থেকে ড্রডাউন সীমা % (০=বন্ধ)</label><input id="aDD" type="number"></div><div><label>"লো" সীমা (&lt; X)</label><input id="aLow" type="number" step="0.1"></div></div>
+        <label>ক্যাশআউট কীভাবে ঠিক হবে (এজ-গেট "বন্ধ" মোডে)</label><select id="aExit"><option value="trend">ট্রেন্ড-ডাইনামিক — সাম্প্রতিক বণ্টন ও ট্রেন্ড দেখে বাড়ে/কমে</option><option value="model">মডেল-ভিত্তিক — ৭টি নির্দিষ্ট target থেকে</option></select>
+        <label>এজ-গেট (ভার্চুয়াল-বেট প্রমাণ)</label><select id="aGate"><option value="off">প্রমাণ ছাড়াই বেট (ডিফল্ট) — এজ-গেট বন্ধ</option><option value="soft">নরম — গড় > ০ হলে বেট</option><option value="strict">কঠোর — ৯৫% নিম্নসীমা > ০ হলে বেট</option></select>
+        <label>স্মার্ট স্টেক: ভগ্নাংশ-কেলি (০ = বন্ধ, ০.২৫ প্রস্তাবিত) — হিট-রেটের <i>নিম্নসীমা</i> (৯৫% আস্থা) থেকে এজ না মিললে বেট নয়</label><input id="aKelly" type="number" step="0.05">
+        <label><input type="checkbox" id="aRec" style="width:auto"> লো-ক্লাস্টার রিকভারি প্ল্যান — পরপর ২টি "লো" রাউন্ডে বা বেট কাটলে পরের বেট অ্যাডজাস্ট</label>
+        <div class="row"><div><label>রিকভারি লক্ষ্য (ক্ষতির ভগ্নাংশ, ০.১–১)</label><input id="aRecGoal" type="number" step="0.1"></div><div><label>রিস্ক-বাজেট (ব্যালেন্সের %)</label><input id="aRecBud" type="number" step="0.5"></div></div>
+        <label>টানা এতগুলো লো-র পর অপেক্ষা (০ = বন্ধ)</label><input id="aRecPause" type="number" step="1">
+        <div class="row"><div><label>সর্বোচ্চ রিকভারি ধাপ</label><input id="aRecMax" type="number" step="1"></div><div><label>স্টেক সীমা (বেস × কত)</label><input id="aRecCap" type="number" step="0.5"></div></div>
+        <div class="row" style="margin-top:8px"><button class="btn" id="aGo">▶ লাইভ পেপার শুরু</button><button class="btn" id="aStop">⏸ থামান</button><button class="btn" id="aReset">↺ রিসেট</button></div>
+      </div>
+      <div class="card" id="thrillCard"><h3>🎰 থ্রিল স্টেজ (পেপার)</h3>
+        <div class="row"><button class="btn" id="thEvery">⚡ প্রতি রাউন্ডে বেট + ট্রেন্ড ক্যাশআউট</button><button class="btn" id="thSnd">🔊 সাউন্ড: বন্ধ</button></div>
+        <canvas id="thCv" width="440" height="190" style="margin-top:8px;height:190px"></canvas>
+        <div class="grid" style="margin-top:6px"><div class="kv"><b id="thStreak">0</b><span>চলমান স্ট্রিক</span></div><div class="kv"><b id="thBest">0</b><span>সেরা জয়-স্ট্রিক</span></div><div class="kv"><b id="thLast">—</b><span>শেষ রাউন্ড</span></div><div class="kv"><b id="thNear">—</b><span>নিয়ার-মিস</span></div></div>
+        <div class="m" id="recStat" style="margin-top:4px"></div><div class="m" style="margin-top:4px">শুধু নকল টাকা — কোনো আসল বেট/ক্যাশআউট নেই।</div></div>
+      <div class="card"><h3>লাইভ পেপার ফলাফল</h3><div class="grid" id="aRes"></div><canvas id="ch4" width="400" height="150" style="margin-top:8px"></canvas></div>
+      <div class="card"><h3>সর্বশেষ সিদ্ধান্ত</h3><table id="aLog"></table></div>
+      <div class="card"><h3>ব্যাকটেস্ট: Adaptive Paper AI বনাম সবসময়-বেট</h3>
+        <div class="m">আপনার সংরক্ষিত রাউন্ডে ওয়াক-ফরোয়ার্ড (শুধু আগের ডেটা দেখে সিদ্ধান্ত)।</div>
+        <button class="btn" id="aBt" style="margin-top:6px">চালান</button><div id="aBtRes" style="margin-top:8px"></div><canvas id="ch5" width="400" height="150" style="margin-top:8px"></canvas></div>
+    </div>
+
+
+
+  </div>
+</div>
+<script src="android-shim.js"></script>
+<script src="renderer.js"></script>
+</body>
+</html>
